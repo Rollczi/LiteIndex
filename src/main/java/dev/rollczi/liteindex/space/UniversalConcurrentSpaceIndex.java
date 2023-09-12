@@ -63,4 +63,11 @@ class UniversalConcurrentSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, 
         }
     }
 
+    @Override
+    public int size() {
+        synchronized (lock) {
+            return index.size();
+        }
+    }
+
 }

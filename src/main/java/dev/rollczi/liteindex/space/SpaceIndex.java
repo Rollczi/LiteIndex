@@ -20,6 +20,8 @@ public interface SpaceIndex<SPACE, VECTOR> {
 
     Set<SPACE> getAll();
 
+    int size();
+
     static <SPACE, VECTOR> SpaceIndexBuilder<SPACE, VECTOR> builder() {
         return new SpaceIndexBuilder<>();
     }

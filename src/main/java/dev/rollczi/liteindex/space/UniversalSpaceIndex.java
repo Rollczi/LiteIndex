@@ -4,7 +4,14 @@ import dev.rollczi.liteindex.axis.*;
 import dev.rollczi.liteindex.space.indexing.IndexingAlgorithmSet;
 import dev.rollczi.liteindex.space.range.SpaceRangeProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
 
@@ -61,6 +68,11 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
     @Override
     public Set<SPACE> getAll() {
         return Collections.unmodifiableSet(this.allSpaces);
+    }
+
+    @Override
+    public int size() {
+        return this.allSpaces.size();
     }
 
     private interface Bucket<SPACE, VECTOR> {
