@@ -4,7 +4,7 @@ import dev.rollczi.liteindex.mock.Vector2d;
 import dev.rollczi.liteindex.mock.Vector3d;
 import org.junit.jupiter.api.Test;
 
-import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +24,8 @@ class AxesSetTest {
         assertEquals(10, result.next().getCoordinate());
         assertEquals(20, result.next().getCoordinate());
         assertEquals(30, result.next().getCoordinate());
+
+        assertThrows(NoSuchElementException.class, () -> result.next());
     }
 
     @Test
