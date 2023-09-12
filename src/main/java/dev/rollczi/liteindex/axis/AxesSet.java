@@ -2,11 +2,7 @@ package dev.rollczi.liteindex.axis;
 
 import dev.rollczi.liteindex.shared.Validation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class AxesSet<VECTOR> {
 
@@ -14,22 +10,16 @@ public class AxesSet<VECTOR> {
 
     private AxesSet() {}
 
-    public AxisResult<VECTOR> createResult(VECTOR vector) {
-        AxisResult<VECTOR> result = new AxisResult<>(vector);
-
-        for (Axis<VECTOR> axis : axes) {
-            result = result.withAxis(axis);
-        }
-
-        return result;
-    }
-
     Optional<Axis<VECTOR>> getAxis(int index) {
         if (index >= axes.size()) {
             return Optional.empty();
         }
 
         return Optional.of(axes.get(index));
+    }
+
+    List<Axis<VECTOR>> getAxes() {
+        return Collections.unmodifiableList(axes);
     }
 
     @SafeVarargs

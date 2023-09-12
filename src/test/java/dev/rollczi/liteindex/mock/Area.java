@@ -44,4 +44,8 @@ public class Area {
                 && vector.getZ() >= min.getZ() && vector.getZ() <= max.getZ();
     }
 
+    public static Area of(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return new Area(new Vector3d(minX, minY, minZ), new Vector3d(maxX, maxY, maxZ));
+    }
+
 }

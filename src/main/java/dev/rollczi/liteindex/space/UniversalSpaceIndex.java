@@ -1,86 +1,77 @@
 package dev.rollczi.liteindex.space;
 
-import dev.rollczi.liteindex.axis.AxesSet;
-import dev.rollczi.liteindex.axis.AxesState;
-import dev.rollczi.liteindex.axis.Axis;
-import dev.rollczi.liteindex.axis.AxisResultEntry;
+import dev.rollczi.liteindex.axis.*;
+import dev.rollczi.liteindex.space.indexing.IndexingAlgorithmSet;
+import dev.rollczi.liteindex.space.range.SpaceRangeProvider;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
 
-    private final SpaceVectorProvider<SPACE, VECTOR> spaceVectorProvider;
+    private final SpaceRangeProvider<SPACE, VECTOR> spaceRangeProvider;
 
-    private final IndexSize indexSize;
-    private final BucketWithBuckets rootBucket;
+    private final IndexingAlgorithmSet<VECTOR> indexingAlgorithm;
     private final AxesSet<VECTOR> axesSet;
 
+    private final BucketWithBuckets rootBucket;
     private final Set<SPACE> allSpaces = new HashSet<>();
-    private final Map<SPACE, Set<BucketBottom>> bucketsBySpace = new HashMap<>();
 
-    UniversalSpaceIndex(SpaceVectorProvider<SPACE, VECTOR> spaceVectorProvider, AxesSet<VECTOR> axesSet, IndexSize indexSize) {
-        this.spaceVectorProvider = spaceVectorProvider;
-        this.indexSize = indexSize;
+    UniversalSpaceIndex(SpaceRangeProvider<SPACE, VECTOR> spaceRangeProvider, AxesSet<VECTOR> axesSet, IndexingAlgorithmSet<VECTOR> indexingAlgorithmSet) {
+        this.spaceRangeProvider = spaceRangeProvider;
+        this.indexingAlgorithm = indexingAlgorithmSet;
         this.rootBucket = new BucketWithBuckets(AxesState.create(axesSet));
         this.axesSet = axesSet;
     }
 
     @Override
-    public Set<SPACE> get(VECTOR vector) {
-        return rootBucket.getSpaces(vector);
+    public List<SPACE> get(VECTOR vector) {
+        return this.rootBucket.getSpaces(vector);
     }
 
     @Override
     public Optional<SPACE> getFirst(VECTOR vector) {
-        return this.get(vector).stream().findFirst();
+        return this.get(vector)
+            .stream()
+            .findFirst();
     }
 
     @Override
     public void put(SPACE space) {
-        rootBucket.putSpace(space);
-        allSpaces.add(space);
+        this.allSpaces.add(space);
+        this.rootBucket.putSpace(space);
     }
 
     @Override
-    public synchronized boolean remove(SPACE space) {
-        boolean isRemoved = false;
-        Set<BucketBottom> removed = bucketsBySpace.remove(space);
+    public boolean remove(SPACE space) {
+        this.allSpaces.remove(space);
+        return this.rootBucket.removeSpace(space);
+    }
 
-        if (removed != null) {
-            for (BucketBottom bucket : removed) {
-                bucket.nativeRemoveSpace(space);
-            }
-
-            isRemoved = true;
-        }
-
-        isRemoved |= allSpaces.remove(space);
-
-        return isRemoved;
+    @Override
+    public void removeAll() {
+        this.rootBucket.removeAll();
+        this.allSpaces.clear();
     }
 
     @Override
     public boolean contains(SPACE space) {
-        return allSpaces.contains(space);
+        return this.allSpaces.contains(space);
     }
 
     @Override
-    public Collection<SPACE> getAll() {
-        return Collections.unmodifiableSet(allSpaces);
+    public Set<SPACE> getAll() {
+        return Collections.unmodifiableSet(this.allSpaces);
     }
 
     private interface Bucket<SPACE, VECTOR> {
 
-        Set<SPACE> getSpaces(VECTOR vector);
+        List<SPACE> getSpaces(VECTOR vector);
 
         void putSpace(SPACE space);
+
+        boolean removeSpace(SPACE space);
+
+        void removeAll();
 
     }
 
@@ -94,14 +85,13 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
         }
 
         @Override
-        public Set<SPACE> getSpaces(VECTOR vector) {
-            double coordinate = axesState.getCurrentAxis().getAxisCoordinate(vector);
-            int index = indexSize.toIndex(coordinate);
+        public List<SPACE> getSpaces(VECTOR vector) {
+            int index = indexingAlgorithm.toIndex(this.axesState.getCurrentAxis(), vector);
 
-            Bucket<SPACE, VECTOR> bucket = buckets.get(index);
+            Bucket<SPACE, VECTOR> bucket = this.buckets.get(index);
 
             if (bucket == null) {
-                return Collections.emptySet();
+                return Collections.emptyList();
             }
 
             return bucket.getSpaces(vector);
@@ -109,16 +99,13 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
 
         @Override
         public void putSpace(SPACE space) {
-            VECTOR minVector = spaceVectorProvider.getMinVector(space);
-            VECTOR maxVector = spaceVectorProvider.getMaxVector(space);
+            Axis<VECTOR> currentAxis = this.axesState.getCurrentAxis();
 
-            Axis<VECTOR> currentAxis = axesState.getCurrentAxis();
+            VECTOR minVector = spaceRangeProvider.getMinRange(space);
+            VECTOR maxVector = spaceRangeProvider.getMaxRange(space);
 
-            double minCoordinate = currentAxis.getAxisCoordinate(minVector);
-            double maxCoordinate = currentAxis.getAxisCoordinate(maxVector);
-
-            int indexMin = indexSize.toIndex(minCoordinate);
-            int indexMax = indexSize.toIndex(maxCoordinate);
+            int indexMin = indexingAlgorithm.toIndex(currentAxis, minVector);
+            int indexMax = indexingAlgorithm.toIndex(currentAxis, maxVector);
 
             for (int index = indexMin; index <= indexMax; index++) {
                 this.putSpace(space, index);
@@ -126,14 +113,50 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
         }
 
         private void putSpace(SPACE space, int index) {
-            Optional<AxesState<VECTOR>> next = axesState.withNextAxis();
-            Bucket<SPACE, VECTOR> bucket = buckets.computeIfAbsent(index, integer -> next
+            Optional<AxesState<VECTOR>> next = this.axesState.withNextAxis();
+            Bucket<SPACE, VECTOR> bucket = this.buckets.computeIfAbsent(index, integer -> next
                     .<Bucket<SPACE, VECTOR>>map(BucketWithBuckets::new)
                     .orElse(new BucketBottom()));
 
             bucket.putSpace(space);
         }
 
+        public void removeAll() {
+            for (Bucket<SPACE, VECTOR> bucket : this.buckets.values()) {
+                bucket.removeAll();
+            }
+
+            this.buckets.clear();
+        }
+
+        @Override
+        public boolean removeSpace(SPACE space) {
+            Axis<VECTOR> currentAxis = this.axesState.getCurrentAxis();
+
+            VECTOR minVector = spaceRangeProvider.getMinRange(space);
+            VECTOR maxVector = spaceRangeProvider.getMaxRange(space);
+
+            int indexMin = indexingAlgorithm.toIndex(currentAxis, minVector);
+            int indexMax = indexingAlgorithm.toIndex(currentAxis, maxVector);
+
+            boolean isRemoved = false;
+
+            for (int index = indexMin; index <= indexMax; index++) {
+                isRemoved |= this.removeSpace(space, index);
+            }
+
+            return isRemoved;
+        }
+
+        private boolean removeSpace(SPACE space, int index) {
+            Bucket<SPACE, VECTOR> bucket = this.buckets.get(index);
+
+            if (bucket != null) {
+                return bucket.removeSpace(space);
+            }
+
+            return false;
+        }
     }
 
     private class BucketBottom implements Bucket<SPACE, VECTOR> {
@@ -141,10 +164,10 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
         private final Set<SPACE> spaces = new HashSet<>();
 
         @Override
-        public Set<SPACE> getSpaces(VECTOR vector) {
-            Set<SPACE> contain = new HashSet<>();
+        public List<SPACE> getSpaces(VECTOR vector) {
+            List<SPACE> contain = new ArrayList<>();
 
-            for (SPACE space : spaces) {
+            for (SPACE space : this.spaces) {
                 if (this.isSpaceContains(space, vector)) {
                     contain.add(space);
                 }
@@ -154,10 +177,14 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
         }
 
         private boolean isSpaceContains(SPACE space, VECTOR currentVector) {
-            VECTOR minVector = spaceVectorProvider.getMinVector(space);
-            VECTOR maxVector = spaceVectorProvider.getMaxVector(space);
+            VECTOR minVector = spaceRangeProvider.getMinRange(space);
+            VECTOR maxVector = spaceRangeProvider.getMaxRange(space);
 
-            for (AxisResultEntry<VECTOR> entry : axesSet.createResult(currentVector)) {
+            AxesIterator<VECTOR> axesIterator = new AxesIterator<>(axesSet, currentVector);
+
+            while (axesIterator.hasNext()) {
+                AxisResultEntry<VECTOR> entry = axesIterator.next();
+
                 double currentCoordinate = entry.getCoordinate();
                 Axis<VECTOR> axis = entry.getAxis();
 
@@ -175,13 +202,19 @@ class UniversalSpaceIndex<SPACE, VECTOR> implements SpaceIndex<SPACE, VECTOR> {
 
         @Override
         public void putSpace(SPACE space) {
-            spaces.add(space);
-            bucketsBySpace.computeIfAbsent(space, key -> new HashSet<>()).add(this);
+            this.spaces.add(space);
         }
 
-        private void nativeRemoveSpace(SPACE space) {
-            spaces.remove(space);
+        @Override
+        public boolean removeSpace(SPACE space) {
+            return this.spaces.remove(space);
         }
+
+        @Override
+        public void removeAll() {
+            this.spaces.clear();
+        }
+
 
     }
 

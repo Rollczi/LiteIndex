@@ -1,12 +1,12 @@
 package dev.rollczi.liteindex.space;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public interface SpaceIndex<SPACE, VECTOR> {
 
-    Set<SPACE> get(VECTOR vector);
+    List<SPACE> get(VECTOR vector);
 
     Optional<SPACE> getFirst(VECTOR vector);
 
@@ -14,9 +14,11 @@ public interface SpaceIndex<SPACE, VECTOR> {
 
     boolean remove(SPACE space);
 
+    void removeAll();
+
     boolean contains(SPACE space);
 
-    Collection<SPACE> getAll();
+    Set<SPACE> getAll();
 
     static <SPACE, VECTOR> SpaceIndexBuilder<SPACE, VECTOR> builder() {
         return new SpaceIndexBuilder<>();
