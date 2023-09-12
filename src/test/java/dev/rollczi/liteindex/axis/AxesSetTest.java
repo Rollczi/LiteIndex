@@ -17,25 +17,23 @@ class AxesSetTest {
             Axis.of("z", Vector3d::getZ)
     );
 
-//    @Test
-//    void testValueOrderExtracting() {
-//        AxisResult<Vector3d> result = AxisResult.from(AXES_XYZ, new Vector3d(10, 20, 30));
-//        Iterator<AxisResultEntry<Vector3d>> entries = result.iterator();
-//
-//        assertEquals(10, entries.next().getCoordinate());
-//        assertEquals(20, entries.next().getCoordinate());
-//        assertEquals(30, entries.next().getCoordinate());
-//    }
-//
-//    @Test
-//    void testNameOrder() {
-//        AxisResult<Vector3d> result = AxisResult.from(AXES_XYZ, new Vector3d(10, 20, 30));
-//        Iterator<AxisResultEntry<Vector3d>> entries = result.iterator();
-//
-//        assertEquals("x", entries.next().getAxis().getName());
-//        assertEquals("y", entries.next().getAxis().getName());
-//        assertEquals("z", entries.next().getAxis().getName());
-//    }
+    @Test
+    void testValueOrderExtracting() {
+        AxesIterator<Vector3d> result = new AxesIterator<>(AXES_XYZ, new Vector3d(10, 20, 30));
+
+        assertEquals(10, result.next().getCoordinate());
+        assertEquals(20, result.next().getCoordinate());
+        assertEquals(30, result.next().getCoordinate());
+    }
+
+    @Test
+    void testNameOrder() {
+        AxesIterator<Vector3d> result = new AxesIterator<>(AXES_XYZ, new Vector3d(10, 20, 30));
+
+        assertEquals("x", result.next().getAxis().getName());
+        assertEquals("y", result.next().getAxis().getName());
+        assertEquals("z", result.next().getAxis().getName());
+    }
 
     @Test
     void testCreateWithNullArray() {

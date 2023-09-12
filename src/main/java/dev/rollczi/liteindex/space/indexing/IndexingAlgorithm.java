@@ -16,8 +16,12 @@ public interface IndexingAlgorithm<VECTOR> {
         return IndexingAlgorithmChunkImpl.of(powerOfTwo, decimalPrecisionScale);
     }
 
-    static <VECTOR> IndexingAlgorithm<VECTOR> optimalChunk(double expectedBorderSize, double expectedBoxSize) {
-        return IndexingAlgorithmChunkImpl.optimal(expectedBorderSize, expectedBoxSize);
+    static <VECTOR> IndexingAlgorithm<VECTOR> calculateOptimal(double expectedBorderSize, double expectedBoxSize, int decimalPrecisionScale) {
+        return IndexingAlgorithmChunkImpl.optimal(expectedBorderSize, expectedBoxSize, decimalPrecisionScale);
+    }
+
+    static <VECTOR> IndexingAlgorithm<VECTOR> calculateOptimal(double expectedBorderSize, double expectedBoxSize) {
+        return IndexingAlgorithmChunkImpl.optimal(expectedBorderSize, expectedBoxSize, 0);
     }
 
 }

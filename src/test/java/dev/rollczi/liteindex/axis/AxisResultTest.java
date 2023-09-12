@@ -16,23 +16,22 @@ class AxisResultTest {
             Axis.of("z", Vector3d::getZ)
     );
 
-//
-//    @Test
-//    void testOrderOfAxes() {
-//        AxisResult<Vector3d> result = AxisResult.from(AXES_XYZ, new Vector3d(10, 20, 30));
-//
-//        Iterator<AxisResultEntry<Vector3d>> results = result.iterator();
-//        AxisResultEntry<Vector3d> resultX = results.next();
-//        AxisResultEntry<Vector3d> resultY = results.next();
-//        AxisResultEntry<Vector3d> resultZ = results.next();
-//
-//        assertEquals(Vector3d.AXIS_X, resultX.getAxis());
-//        assertEquals(Vector3d.AXIS_Y, resultY.getAxis());
-//        assertEquals(Vector3d.AXIS_Z, resultZ.getAxis());
-//
-//        assertEquals(10, resultX.getCoordinate());
-//        assertEquals(20, resultY.getCoordinate());
-//        assertEquals(30, resultZ.getCoordinate());
-//    }
+
+    @Test
+    void testOrderOfAxes() {
+        AxesIterator<Vector3d> result = new AxesIterator<>(AXES_XYZ, new Vector3d(10, 20, 30));
+
+        AxisResultEntry<Vector3d> resultX = result.next();
+        AxisResultEntry<Vector3d> resultY = result.next();
+        AxisResultEntry<Vector3d> resultZ = result.next();
+
+        assertEquals(Vector3d.AXIS_X, resultX.getAxis());
+        assertEquals(Vector3d.AXIS_Y, resultY.getAxis());
+        assertEquals(Vector3d.AXIS_Z, resultZ.getAxis());
+
+        assertEquals(10, resultX.getCoordinate());
+        assertEquals(20, resultY.getCoordinate());
+        assertEquals(30, resultZ.getCoordinate());
+    }
 
 }

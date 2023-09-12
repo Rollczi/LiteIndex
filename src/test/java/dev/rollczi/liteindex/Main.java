@@ -3,6 +3,7 @@ package dev.rollczi.liteindex;
 import dev.rollczi.liteindex.mock.Area;
 import dev.rollczi.liteindex.mock.Vector3d;
 import dev.rollczi.liteindex.space.SpaceIndex;
+import dev.rollczi.liteindex.space.indexing.IndexingAlgorithm;
 
 import java.util.Random;
 
@@ -10,16 +11,18 @@ public class Main {
 
     private final static Random RANDOM = new Random();
     private final static int MAP_SIZE = 5_000;
+    private final static int BOX_SIZE = 80;
 
     public static void main(String[] args) {
         // test space index time
 
         SpaceIndex<Area, Vector3d> spaceIndex = SpaceIndex.<Area, Vector3d>builder()
-                .axisX(vector3d -> vector3d.getX())
-                .axisY(vector3d -> vector3d.getY())
-                .axisZ(vector3d -> vector3d.getZ())
-                .space(area -> area.getMin(), area -> area.getMax())
-                .build();
+            .axisX(vector3d -> vector3d.getX())
+            .axisZ(vector3d -> vector3d.getZ())
+            .axisY(vector3d -> vector3d.getY())
+            .space(area -> area.getMin(), area -> area.getMax())
+            .indexing(IndexingAlgorithm.calculateOptimal(MAP_SIZE, BOX_SIZE))
+            .build();
 
         for (int index = 0; index < 100_000; index++) {
             spaceIndex.put(randomArea());
@@ -50,7 +53,7 @@ public class Main {
 
     private static Area randomArea() {
         Vector3d min = new Vector3d(RANDOM.nextDouble() * MAP_SIZE, RANDOM.nextDouble() * MAP_SIZE, RANDOM.nextDouble() * MAP_SIZE);
-        Vector3d max = new Vector3d(min.getX() + 80, min.getY() + 80, min.getZ() + 80);
+        Vector3d max = new Vector3d(min.getX() + BOX_SIZE, min.getY() + BOX_SIZE, min.getZ() + BOX_SIZE);
 
         return new Area(min, max);
     }

@@ -16,7 +16,7 @@ public class SpaceIndexBuilder<SPACE, VECTOR> {
 
     private final List<Axis<VECTOR>> axes = new ArrayList<>();
     private final IndexingAlgorithmSet.Builder<VECTOR> indexingAlgorithmBuilder = IndexingAlgorithmSet.<VECTOR>builder()
-            .defaultAlgorithm(IndexingAlgorithm.chunk(4));
+            .defaultAlgorithm(IndexingAlgorithm.chunk(8));
 
     private SpaceRangeProvider<SPACE, VECTOR> spaceRangeProvider;
     private boolean concurrent = false;

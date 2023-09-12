@@ -15,7 +15,7 @@ class IndexingAlgorithmChunkImpl<VECTOR> implements IndexingAlgorithm<VECTOR> {
     @Override
     public int toIndex(Axis<VECTOR> axis, VECTOR vector) {
         double coordinate = axis.getAxisCoordinate(vector);
-        int scaledCoordinate = (int) IndexingAlgorithmChunkImpl.scale(coordinate, decimalPrecisionScale);
+        int scaledCoordinate = (int) scale(coordinate, decimalPrecisionScale);
 
         return scaledCoordinate >> powerOfTwo;
     }
@@ -23,48 +23,46 @@ class IndexingAlgorithmChunkImpl<VECTOR> implements IndexingAlgorithm<VECTOR> {
     @Override
     public double toCoordinate(int index) {
         int scaledCoordinate = index << powerOfTwo;
-        return IndexingAlgorithmChunkImpl.unScale(scaledCoordinate, decimalPrecisionScale);
+        return unScale(scaledCoordinate, decimalPrecisionScale);
     }
 
-    public static <VECTOR> IndexingAlgorithmChunkImpl<VECTOR> of(int power) {
+    static <VECTOR> IndexingAlgorithm<VECTOR> of(int power) {
         return new IndexingAlgorithmChunkImpl<>(power, 0);
     }
 
-    public static <VECTOR> IndexingAlgorithmChunkImpl<VECTOR> of(int power, int decimalPrecisionScale) {
+    static <VECTOR> IndexingAlgorithm<VECTOR> of(int power, int decimalPrecisionScale) {
         return new IndexingAlgorithmChunkImpl<>(power, decimalPrecisionScale);
     }
 
-    private static final int LIMIT_DECIMAL_PRECISION_SCALE = 2;
-    private static final int LIMIT_DECIMAL_PRECISION_SCALE_AFTER_BORDER = 100;
-    private static final int DIVISIONS_CAPACITY = 2;
+    private static final int MEDIAN_RATIO = 100;
 
-    public static <VECTOR> IndexingAlgorithmChunkImpl<VECTOR> optimal(double expectedBorderSize, double expectedBoxSize) {
-        int decimalPlacesPrecisionScale = Math.max(IndexingAlgorithmChunkImpl.decimalPlaces(expectedBorderSize), IndexingAlgorithmChunkImpl.decimalPlaces(expectedBoxSize));
-
-        if (expectedBorderSize > LIMIT_DECIMAL_PRECISION_SCALE_AFTER_BORDER) {
-            decimalPlacesPrecisionScale = 0;
+    static <VECTOR> IndexingAlgorithm<VECTOR> optimal(double expectedBorderSize, double expectedBoxSize, int decimalPrecisionScale) {
+        if (expectedBorderSize < expectedBoxSize) {
+            throw new IllegalArgumentException("Expected border size cannot be less than expected box size");
         }
 
-        if (decimalPlacesPrecisionScale > LIMIT_DECIMAL_PRECISION_SCALE) {
-            decimalPlacesPrecisionScale = LIMIT_DECIMAL_PRECISION_SCALE;
+        decimalPrecisionScale = Math.max(decimalPrecisionScale, decimalPlaces(expectedBoxSize));
+        decimalPrecisionScale = Math.max(decimalPrecisionScale, decimalPlaces(expectedBorderSize));
+
+        int scaledBorderSize = (int) scale(expectedBorderSize, decimalPrecisionScale);
+        int scaledBoxSize = (int) scale(expectedBoxSize, decimalPrecisionScale);
+        int scaledRatio = scaledBorderSize / scaledBoxSize;
+        int median = scaledRatio / MEDIAN_RATIO;
+        int medianAndBoxAverage = (median + scaledBoxSize) / 2;
+
+        for (int power = 0; power < Integer.MAX_VALUE; power++) {
+            int realChunkSize = (int) Math.pow(2, power);
+
+            if (realChunkSize > scaledBorderSize) {
+                return new IndexingAlgorithmChunkImpl<>(power - 1, decimalPrecisionScale);
+            }
+
+            if (realChunkSize > medianAndBoxAverage) {
+                return new IndexingAlgorithmChunkImpl<>(power, decimalPrecisionScale);
+            }
         }
 
-        int scaledBorderSize = (int) IndexingAlgorithmChunkImpl.scale(expectedBorderSize, decimalPlacesPrecisionScale);
-        double scaledBoxSize = IndexingAlgorithmChunkImpl.scale(expectedBoxSize, decimalPlacesPrecisionScale);
-
-        if (scaledBoxSize == 0) {
-            throw new IllegalArgumentException("Box wall size cannot be 0");
-        }
-
-        double divisions = scaledBorderSize / scaledBoxSize;
-        double biggerDivisions = divisions / DIVISIONS_CAPACITY;
-        int power = 0;
-
-        while (scaledBorderSize >> power > biggerDivisions) {
-            power++;
-        }
-
-        return new IndexingAlgorithmChunkImpl<>(power, decimalPlacesPrecisionScale);
+        throw new IllegalStateException("Cannot find optimal chunk size");
     }
 
     private static int decimalPlaces(double value) {
