@@ -7,7 +7,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 
-    testImplementation("org.awaitility:awaitility:4.2.0")
+    testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
     testImplementation("nl.jqno.equalsverifier:equalsverifier:3.10.1")
