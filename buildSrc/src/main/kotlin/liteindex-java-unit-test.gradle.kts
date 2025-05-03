@@ -10,7 +10,7 @@ dependencies {
     testImplementation("org.awaitility:awaitility:4.2.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
-    testImplementation("nl.jqno.equalsverifier:equalsverifier:3.10.1")
+    testImplementation("nl.jqno.equalsverifier:equalsverifier:3.19.4")
 }
 
 tasks.getByName<Test>("test") {
